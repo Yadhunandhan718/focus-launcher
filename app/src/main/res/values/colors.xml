@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Tinker with these to restyle the whole launcher. -->
+    <color name="bg">#000000</color>
+    <color name="tile">#1C1C1E</color>
+    <color name="ripple">#33FFFFFF</color>
+    <color name="text">#FFFFFF</color>
+    <color name="text_dim">#8E8E93</color>
+
+    <color name="ic_bg">#121212</color>
+</resources>

@@ -1,0 +1,34 @@
+name: Build APK
+
+# Runs on every push, and you can also start it by hand from the Actions tab.
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # Installs the Android SDK pieces and accepts their licenses.
+      - uses: android-actions/setup-android@v3
+
+      # Uses Gradle 8.9 directly, so no gradlew wrapper script is needed.
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Build debug APK
+        run: gradle assembleDebug --no-daemon
+
+      # Debug builds are signed automatically, so this APK installs straight onto a phone.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: focus-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk

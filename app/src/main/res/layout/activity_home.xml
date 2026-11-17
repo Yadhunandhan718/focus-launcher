@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg"
+    android:orientation="vertical"
+    android:paddingStart="12dp"
+    android:paddingTop="8dp"
+    android:paddingEnd="12dp"
+    android:paddingBottom="8dp">
+
+    <!-- Clock + date. Long-press this area to open launcher settings. -->
+    <LinearLayout
+        android:id="@+id/header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="12dp"
+        android:paddingTop="8dp"
+        android:paddingEnd="12dp"
+        android:paddingBottom="8dp">
+
+        <TextClock
+            android:id="@+id/clock"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:format12Hour="h:mm"
+            android:format24Hour="HH:mm"
+            android:textColor="@color/text"
+            android:textSize="52sp"
+            android:textStyle="bold" />
+
+        <TextClock
+            android:id="@+id/date"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:format12Hour="EEEE, d MMMM"
+            android:format24Hour="EEEE, d MMMM"
+            android:textColor="@color/text_dim"
+            android:textSize="18sp" />
+    </LinearLayout>
+
+    <!-- Rows and tiles are added here from HomeActivity.render(). -->
+    <LinearLayout
+        android:id="@+id/grid"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical" />
+
+    <TextView
+        android:id="@+id/allApps"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:layout_margin="6dp"
+        android:background="@drawable/tile_bg"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center"
+        android:text="All apps"
+        android:textColor="@color/text_dim"
+        android:textSize="18sp" />
+</LinearLayout>
