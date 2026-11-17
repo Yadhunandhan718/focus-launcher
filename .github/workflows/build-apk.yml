@@ -7,17 +7,16 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # Pinned so a future "ubuntu-latest" change can't break the build.
+    # This image already ships with the Android SDK and accepted licenses.
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
-
-      # Installs the Android SDK pieces and accepts their licenses.
-      - uses: android-actions/setup-android@v3
 
       # Uses Gradle 8.9 directly, so no gradlew wrapper script is needed.
       - uses: gradle/actions/setup-gradle@v4
