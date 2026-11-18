@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/welcomeRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="32dp">
+
+    <ImageView
+        android:layout_width="104dp"
+        android:layout_height="104dp"
+        android:src="@drawable/focus_mark"
+        android:contentDescription="Focus logo" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:text="FOCUS"
+        android:textColor="@color/text"
+        android:textSize="38sp"
+        android:textStyle="bold"
+        android:letterSpacing="0.18" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:gravity="center"
+        android:text="be your phone's master - not the other way around"
+        android:textColor="@color/text_dim"
+        android:textSize="18sp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:gravity="center"
+        android:text="A calmer home screen. Only the apps you choose, arranged your way. You can change your choices any time in Settings."
+        android:textColor="@color/text"
+        android:textSize="15sp" />
+
+    <Button
+        android:id="@+id/startSetup"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="36dp"
+        android:text="Set up Focus" />
+</LinearLayout>

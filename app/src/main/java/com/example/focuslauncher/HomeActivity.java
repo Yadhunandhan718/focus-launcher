@@ -10,7 +10,6 @@ import android.graphics.ColorMatrixColorFilter;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.text.InputType;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -18,6 +17,7 @@ import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.TextClock;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -31,67 +31,226 @@ public class HomeActivity extends Activity {
     private final ColorFilter grayFilter = makeGrayFilter();
 
     @Override protected void onCreate(Bundle state) {
-        super.onCreate(state); setContentView(R.layout.activity_home);
-        prefs = new Prefs(this); grid = findViewById(R.id.grid); Ui.applySystemBarPadding(findViewById(R.id.root), false);
-        if (!prefs.isSetupComplete()) { openSetup(); return; }
-        findViewById(R.id.allApps).setOnClickListener(v -> startActivity(new Intent(this, AppPickerActivity.class)));
+        super.onCreate(state);
+        prefs = new Prefs(this);
+        if (!prefs.isSetupComplete()) showWelcome();
+        else showHome();
+    }
+
+    private void showWelcome() {
+        setContentView(R.layout.activity_welcome);
+        Ui.applySystemBarPadding(findViewById(R.id.welcomeRoot), false);
+        findViewById(R.id.startSetup).setOnClickListener(v -> {
+            showHome();
+            openSetup();
+        });
+    }
+
+    private void showHome() {
+        setContentView(R.layout.activity_home);
+        grid = findViewById(R.id.grid);
+        Ui.applySystemBarPadding(findViewById(R.id.root), false);
+
+        findViewById(R.id.allApps).setOnClickListener(v -> {
+            Intent i = new Intent(this, AppPickerActivity.class);
+            startActivity(i);
+        });
+        findViewById(R.id.settingsButton).setOnClickListener(v -> showSettings());
         findViewById(R.id.header).setOnLongClickListener(v -> { showSettings(); return true; });
-        findViewById(R.id.previousPage).setOnClickListener(v -> { if (currentPage > 0) { currentPage--; render(); } });
-        findViewById(R.id.nextPage).setOnClickListener(v -> { if (currentPage < prefs.getPageCount() - 1) { currentPage++; render(); } });
+        findViewById(R.id.previousPage).setOnClickListener(v -> {
+            if (currentPage > 0) { currentPage--; render(); }
+        });
+        findViewById(R.id.nextPage).setOnClickListener(v -> {
+            if (currentPage < prefs.getPageCount() - 1) { currentPage++; render(); }
+        });
         findViewById(R.id.addPage).setOnClickListener(v -> addPage());
         findViewById(R.id.pageName).setOnClickListener(v -> managePage());
         findViewById(R.id.pageName).setOnLongClickListener(v -> { managePage(); return true; });
+        applyDisplayPreferences();
+        render();
     }
-    private void openSetup() { Intent i = new Intent(this, AppPickerActivity.class); i.putExtra(AppPickerActivity.EXTRA_SETUP, true); startActivityForResult(i, 10); }
-    @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) { super.onActivityResult(requestCode,resultCode,data); if (requestCode == 10) { if (prefs.isSetupComplete()) render(); else finish(); } }
-    @Override protected void onResume() { super.onResume(); if (prefs != null && prefs.isSetupComplete()) { if (currentPage >= prefs.getPageCount()) currentPage = prefs.getPageCount()-1; render(); } }
+
+    private void openSetup() {
+        Intent i = new Intent(this, AppPickerActivity.class);
+        i.putExtra(AppPickerActivity.EXTRA_SETUP, true);
+        startActivityForResult(i, 10);
+    }
+
+    @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == 10) {
+            if (prefs.isSetupComplete()) { if (grid == null) showHome(); render(); }
+            else showWelcome();
+        }
+    }
+
+    @Override protected void onResume() {
+        super.onResume();
+        if (prefs != null && prefs.isSetupComplete() && grid != null) {
+            if (currentPage >= prefs.getPageCount()) currentPage = prefs.getPageCount() - 1;
+            applyDisplayPreferences();
+            render();
+        }
+    }
+
+    private void applyDisplayPreferences() {
+        TextClock clock = findViewById(R.id.clock);
+        TextClock date = findViewById(R.id.date);
+        if (clock != null) {
+            clock.setVisibility(prefs.isShowClock() ? View.VISIBLE : View.GONE);
+            clock.setFormat12Hour(prefs.is24Hour() ? "HH:mm" : "h:mm");
+            clock.setFormat24Hour("HH:mm");
+        }
+        if (date != null) date.setVisibility(prefs.isShowDate() ? View.VISIBLE : View.GONE);
+    }
 
     private void render() {
-        grid.removeAllViews(); LayoutInflater inflater = getLayoutInflater(); int margin = Ui.dp(this, TILE_MARGIN_DP);
-        for (int r=0, slot=0; r<ROWS; r++) {
-            LinearLayout row = new LinearLayout(this); row.setOrientation(LinearLayout.HORIZONTAL);
-            grid.addView(row, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,0,1f));
-            for (int c=0;c<COLUMNS;c++,slot++) {
-                View tile = inflater.inflate(R.layout.item_tile,row,false);
-                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.MATCH_PARENT,1f); lp.setMargins(margin,margin,margin,margin); row.addView(tile,lp); bindTile(tile,slot);
+        if (grid == null || !prefs.isSetupComplete()) return;
+        grid.removeAllViews();
+        LayoutInflater inflater = getLayoutInflater();
+        int margin = Ui.dp(this, TILE_MARGIN_DP);
+        for (int r = 0, slot = 0; r < ROWS; r++) {
+            LinearLayout row = new LinearLayout(this);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            grid.addView(row, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+            for (int c = 0; c < COLUMNS; c++, slot++) {
+                View tile = inflater.inflate(R.layout.item_tile, row, false);
+                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f);
+                lp.setMargins(margin, margin, margin, margin);
+                row.addView(tile, lp);
+                bindTile(tile, slot);
             }
         }
-        TextView name = findViewById(R.id.pageName); name.setText(prefs.getPageName(currentPage) + "  •  " + (currentPage+1) + "/" + prefs.getPageCount());
+        TextView name = findViewById(R.id.pageName);
+        name.setText(prefs.getPageName(currentPage) + "  •  " + (currentPage + 1) + "/" + prefs.getPageCount());
         findViewById(R.id.previousPage).setAlpha(currentPage == 0 ? 0.25f : 1f);
-        findViewById(R.id.nextPage).setAlpha(currentPage == prefs.getPageCount()-1 ? 0.25f : 1f);
+        findViewById(R.id.nextPage).setAlpha(currentPage == prefs.getPageCount() - 1 ? 0.25f : 1f);
     }
+
     private void bindTile(View tile, int slot) {
-        ImageView icon=tile.findViewById(R.id.tileIcon); TextView label=tile.findViewById(R.id.tileLabel);
-        String pkg=prefs.getSlot(currentPage,slot);
-        if (pkg != null && !prefs.isAllowed(pkg)) { prefs.setSlot(currentPage,slot,null); pkg=null; }
-        Drawable drawable=pkg==null?null:AppRepository.loadIcon(this,pkg);
-        if (pkg==null || drawable==null) {
-            icon.setVisibility(View.GONE); label.setText("+"); label.setTextSize(TypedValue.COMPLEX_UNIT_SP,EMPTY_PLUS_SP);
-            tile.setOnClickListener(v->openPicker(slot)); tile.setOnLongClickListener(v->{openPicker(slot);return true;}); return;
+        ImageView icon = tile.findViewById(R.id.tileIcon);
+        TextView label = tile.findViewById(R.id.tileLabel);
+        String pkg = prefs.getSlot(currentPage, slot);
+        if (pkg != null && !prefs.isAllowed(pkg)) { prefs.setSlot(currentPage, slot, null); pkg = null; }
+        Drawable drawable = pkg == null ? null : AppRepository.loadIcon(this, pkg);
+        if (pkg == null || drawable == null) {
+            icon.setVisibility(View.GONE);
+            label.setText("+");
+            label.setTextSize(TypedValue.COMPLEX_UNIT_SP, EMPTY_PLUS_SP);
+            tile.setContentDescription("Add an app to this tile");
+            tile.setOnClickListener(v -> openPicker(slot));
+            tile.setOnLongClickListener(v -> { openPicker(slot); return true; });
+            return;
         }
-        icon.setVisibility(View.VISIBLE); icon.setImageDrawable(drawable); icon.setColorFilter(prefs.isGrayscale()?grayFilter:null); label.setText(AppRepository.labelOf(this,pkg));
-        final String app=pkg; tile.setOnClickListener(v->{ if (!prefs.isAllowed(app) || !AppRepository.launch(this,app)) Toast.makeText(this,"Can't open that app",Toast.LENGTH_SHORT).show(); });
-        tile.setOnLongClickListener(v->{showTileMenu(slot,app);return true;});
+        icon.setVisibility(View.VISIBLE);
+        icon.setImageDrawable(drawable);
+        icon.setColorFilter(prefs.isGrayscale() ? grayFilter : null);
+        label.setText(AppRepository.labelOf(this, pkg));
+        tile.setContentDescription(AppRepository.labelOf(this, pkg));
+        final String app = pkg;
+        tile.setOnClickListener(v -> {
+            if (!prefs.isAllowed(app) || !AppRepository.launch(this, app))
+                Toast.makeText(this, "Can't open that app", Toast.LENGTH_SHORT).show();
+        });
+        tile.setOnLongClickListener(v -> { showTileMenu(slot, app); return true; });
     }
-    private void openPicker(int slot) { Intent i=new Intent(this,AppPickerActivity.class); i.putExtra(AppPickerActivity.EXTRA_SLOT,slot); i.putExtra(AppPickerActivity.EXTRA_PAGE,currentPage); startActivity(i); }
-    private void showTileMenu(int slot,String pkg) {
-        new AlertDialog.Builder(this).setTitle(AppRepository.labelOf(this,pkg)).setItems(new String[]{"Change app","Remove from page"},(d,w)->{if(w==0)openPicker(slot);else{prefs.setSlot(currentPage,slot,null);render();}}).show();
+
+    private void openPicker(int slot) {
+        Intent i = new Intent(this, AppPickerActivity.class);
+        i.putExtra(AppPickerActivity.EXTRA_SLOT, slot);
+        i.putExtra(AppPickerActivity.EXTRA_PAGE, currentPage);
+        startActivity(i);
     }
+
+    private void showTileMenu(int slot, String pkg) {
+        new AlertDialog.Builder(this).setTitle(AppRepository.labelOf(this, pkg))
+            .setItems(new String[]{"Change app", "Remove from page"}, (d, w) -> {
+                if (w == 0) openPicker(slot);
+                else { prefs.setSlot(currentPage, slot, null); render(); }
+            }).show();
+    }
+
     private void addPage() {
-        EditText input=new EditText(this); input.setSingleLine(true); input.setHint("Page name");
-        new AlertDialog.Builder(this).setTitle("New page").setView(input).setNegativeButton("Cancel",null).setPositiveButton("Create",(d,w)->{String n=input.getText().toString().trim(); if(n.isEmpty())n="Page "+(prefs.getPageCount()+1); prefs.addPage(n); currentPage=prefs.getPageCount()-1; render();}).show();
+        EditText input = new EditText(this);
+        input.setSingleLine(true);
+        input.setHint("e.g. Work, Study, Personal");
+        new AlertDialog.Builder(this).setTitle("Add a new page")
+            .setMessage("Create another home-screen page to organise a different group of apps.")
+            .setView(input).setNegativeButton("Cancel", null)
+            .setPositiveButton("Create page", (d, w) -> {
+                String n = input.getText().toString().trim();
+                if (n.isEmpty()) n = "Page " + (prefs.getPageCount() + 1);
+                prefs.addPage(n);
+                currentPage = prefs.getPageCount() - 1;
+                render();
+            }).show();
     }
+
     private void managePage() {
-        String[] options={"Rename page","Delete page"}; new AlertDialog.Builder(this).setTitle(prefs.getPageName(currentPage)).setItems(options,(d,w)->{
-            if(w==0){EditText input=new EditText(this);input.setSingleLine(true);input.setText(prefs.getPageName(currentPage));new AlertDialog.Builder(this).setTitle("Rename page").setView(input).setNegativeButton("Cancel",null).setPositiveButton("Save",(x,y)->{String n=input.getText().toString().trim();if(!n.isEmpty())prefs.setPageName(currentPage,n);render();}).show();}
-            else if(prefs.getPageCount()>1){new AlertDialog.Builder(this).setMessage("Delete this page and its tile arrangement?").setNegativeButton("Cancel",null).setPositiveButton("Delete",(x,y)->{prefs.deletePage(currentPage);currentPage=Math.max(0,Math.min(currentPage,prefs.getPageCount()-1));render();}).show();}
-            else Toast.makeText(this,"Keep at least one page",Toast.LENGTH_SHORT).show();
+        String[] options = {"Rename page", "Delete page"};
+        new AlertDialog.Builder(this).setTitle(prefs.getPageName(currentPage)).setItems(options, (d, w) -> {
+            if (w == 0) {
+                EditText input = new EditText(this);
+                input.setSingleLine(true);
+                input.setText(prefs.getPageName(currentPage));
+                new AlertDialog.Builder(this).setTitle("Rename page").setView(input)
+                    .setNegativeButton("Cancel", null).setPositiveButton("Save", (x, y) -> {
+                        String n = input.getText().toString().trim();
+                        if (!n.isEmpty()) prefs.setPageName(currentPage, n);
+                        render();
+                    }).show();
+            } else if (prefs.getPageCount() > 1) {
+                new AlertDialog.Builder(this).setMessage("Delete this page and its tile arrangement?")
+                    .setNegativeButton("Cancel", null).setPositiveButton("Delete", (x, y) -> {
+                        prefs.deletePage(currentPage);
+                        currentPage = Math.max(0, Math.min(currentPage, prefs.getPageCount() - 1));
+                        render();
+                    }).show();
+            } else Toast.makeText(this, "Keep at least one page", Toast.LENGTH_SHORT).show();
         }).show();
     }
+
     private void showSettings() {
-        String[] items={"Grayscale icons: "+(prefs.isGrayscale()?"ON":"OFF"),"Manage permitted apps","Set as default home app"};
-        new AlertDialog.Builder(this).setTitle("Launcher settings").setItems(items,(d,w)->{if(w==0){prefs.setGrayscale(!prefs.isGrayscale());render();}else if(w==1){Intent i=new Intent(this,AppPickerActivity.class);i.putExtra(AppPickerActivity.EXTRA_SETUP,true);startActivity(i);}else openHomeSettings();}).show();
+        String[] items = {
+            "Manage permitted apps",
+            "Grayscale icons: " + (prefs.isGrayscale() ? "ON" : "OFF"),
+            "Show clock: " + (prefs.isShowClock() ? "ON" : "OFF"),
+            "Show date: " + (prefs.isShowDate() ? "ON" : "OFF"),
+            "24-hour clock: " + (prefs.is24Hour() ? "ON" : "OFF"),
+            "Android date & time settings",
+            "Set Focus as default home app"
+        };
+        new AlertDialog.Builder(this).setTitle("Focus · Settings & tweaks").setItems(items, (d, w) -> {
+            switch (w) {
+                case 0: {
+                    Intent i = new Intent(this, AppPickerActivity.class);
+                    i.putExtra(AppPickerActivity.EXTRA_SETUP, true);
+                    startActivity(i);
+                    break;
+                }
+                case 1: prefs.setGrayscale(!prefs.isGrayscale()); render(); break;
+                case 2: prefs.setShowClock(!prefs.isShowClock()); applyDisplayPreferences(); break;
+                case 3: prefs.setShowDate(!prefs.isShowDate()); applyDisplayPreferences(); break;
+                case 4: prefs.set24Hour(!prefs.is24Hour()); applyDisplayPreferences(); break;
+                case 5: openDateTimeSettings(); break;
+                case 6: openHomeSettings(); break;
+            }
+        }).show();
     }
-    private void openHomeSettings(){try{startActivity(new Intent(Settings.ACTION_HOME_SETTINGS));}catch(ActivityNotFoundException e){startActivity(new Intent(Settings.ACTION_SETTINGS));}}
-    private static ColorFilter makeGrayFilter(){ColorMatrix m=new ColorMatrix();m.setSaturation(0f);return new ColorMatrixColorFilter(m);}
+
+    private void openDateTimeSettings() {
+        try { startActivity(new Intent(Settings.ACTION_DATE_SETTINGS)); }
+        catch (ActivityNotFoundException e) { startActivity(new Intent(Settings.ACTION_SETTINGS)); }
+    }
+
+    private void openHomeSettings() {
+        try { startActivity(new Intent(Settings.ACTION_HOME_SETTINGS)); }
+        catch (ActivityNotFoundException e) { startActivity(new Intent(Settings.ACTION_SETTINGS)); }
+    }
+
+    private static ColorFilter makeGrayFilter() {
+        ColorMatrix m = new ColorMatrix();
+        m.setSaturation(0f);
+        return new ColorMatrixColorFilter(m);
+    }
 }

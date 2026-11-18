@@ -12,6 +12,9 @@ import java.util.Set;
 final class Prefs {
     private static final String FILE = "launcher_prefs";
     private static final String KEY_GRAYSCALE = "grayscale";
+    private static final String KEY_SHOW_DATE = "show_date";
+    private static final String KEY_SHOW_CLOCK = "show_clock";
+    private static final String KEY_24_HOUR = "24_hour";
     private static final String KEY_SETUP = "setup_complete";
     private static final String KEY_ALLOWED = "allowed_apps";
     private static final String KEY_PAGE_COUNT = "page_count";
@@ -54,5 +57,11 @@ final class Prefs {
     private String slotKey(int page, int slot) { return KEY_SLOT + page + "_slot_" + slot; }
 
     boolean isGrayscale() { return sp.getBoolean(KEY_GRAYSCALE, false); }
+    boolean isShowDate() { return sp.getBoolean(KEY_SHOW_DATE, true); }
+    void setShowDate(boolean show) { sp.edit().putBoolean(KEY_SHOW_DATE, show).apply(); }
+    boolean isShowClock() { return sp.getBoolean(KEY_SHOW_CLOCK, true); }
+    void setShowClock(boolean show) { sp.edit().putBoolean(KEY_SHOW_CLOCK, show).apply(); }
+    boolean is24Hour() { return sp.getBoolean(KEY_24_HOUR, false); }
+    void set24Hour(boolean enabled) { sp.edit().putBoolean(KEY_24_HOUR, enabled).apply(); }
     void setGrayscale(boolean on) { sp.edit().putBoolean(KEY_GRAYSCALE, on).apply(); }
 }

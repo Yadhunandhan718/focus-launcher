@@ -39,7 +39,18 @@ public class AppPickerActivity extends Activity {
         page = getIntent().getIntExtra(EXTRA_PAGE, 0);
         setup = getIntent().getBooleanExtra(EXTRA_SETUP, false);
         TextView title = findViewById(R.id.pickerTitle);
-        title.setText(setup ? "Choose your apps" : slot == NO_SLOT ? "Search apps" : "Choose an app");
+        title.setText(setup ? (prefs.isSetupComplete() ? "Manage your apps" : "Choose your apps")
+                : slot == NO_SLOT ? "Search apps" : "Choose an app");
+        TextView description = findViewById(R.id.pickerDescription);
+        if (setup) {
+            description.setText(prefs.isSetupComplete()
+                    ? "Select the apps Focus is allowed to show. You can update this list whenever you want in Settings."
+                    : "Choose the apps you want on your Focus home screen. This is your final app list for now: apps you leave unchecked will not appear in Focus. You can change this list later in Settings.");
+        } else {
+            description.setText(slot == NO_SLOT
+                    ? "Search and open apps you've permitted in Focus settings."
+                    : "Choose an app for this home-screen tile.");
+        }
         allApps = AppRepository.loadLaunchableApps(this);
         if (setup) { list = findViewById(R.id.appList); list.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE); if (prefs.isSetupComplete()) selected.addAll(prefs.getAllowedApps()); }
         else {
@@ -52,8 +63,30 @@ public class AppPickerActivity extends Activity {
         list = findViewById(R.id.appList); list.setAdapter(adapter);
         if (setup) for (int i = 0; i < allApps.size(); i++) list.setItemChecked(i, selected.contains(allApps.get(i).packageName));
         if (setup) {
-            Button done = findViewById(R.id.pickerDone); done.setVisibility(View.VISIBLE);
-            done.setOnClickListener(v -> { if (selected.isEmpty()) { Toast.makeText(this, "Choose at least one app", Toast.LENGTH_SHORT).show(); return; } if (prefs.isSetupComplete()) prefs.setAllowedApps(selected); else prefs.completeSetup(selected); setResult(RESULT_OK); finish(); });
+            Button done = findViewById(R.id.pickerDone);
+            done.setVisibility(View.VISIBLE);
+            done.setText(prefs.isSetupComplete() ? "Save app list" : "Confirm my app list");
+            done.setOnClickListener(v -> {
+                if (selected.isEmpty()) {
+                    Toast.makeText(this, "Choose at least one app", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                if (!prefs.isSetupComplete()) {
+                    new android.app.AlertDialog.Builder(this)
+                        .setTitle("This is your Focus app list")
+                        .setMessage("Only the apps selected here will appear in Focus search and app tiles. You can change the list later from Settings. Continue with this selection?")
+                        .setNegativeButton("Review list", null)
+                        .setPositiveButton("Confirm and continue", (dialog, which) -> {
+                            prefs.completeSetup(selected);
+                            setResult(RESULT_OK);
+                            finish();
+                        }).show();
+                } else {
+                    prefs.setAllowedApps(selected);
+                    setResult(RESULT_OK);
+                    finish();
+                }
+            });
             list.setOnItemClickListener((parent, view, position, id) -> { AppInfo app = adapter.getItem(position); if (app != null) { if (!selected.add(app.packageName)) selected.remove(app.packageName); list.setItemChecked(position, selected.contains(app.packageName)); } });
         } else {
             list.setOnItemClickListener((parent, view, position, id) -> choose(adapter.getItem(position)));

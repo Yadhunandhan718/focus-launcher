@@ -4,6 +4,8 @@
     android:background="@color/bg" android:orientation="vertical" android:padding="16dp">
     <TextView android:id="@+id/pickerTitle" android:layout_width="match_parent" android:layout_height="wrap_content"
         android:paddingBottom="12dp" android:textColor="@color/text" android:textSize="28sp" android:textStyle="bold" />
+    <TextView android:id="@+id/pickerDescription" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:paddingBottom="12dp" android:textColor="@color/text_dim" android:textSize="14sp" />
     <EditText android:id="@+id/search" android:layout_width="match_parent" android:layout_height="wrap_content"
         android:background="@drawable/search_bg" android:hint="Search apps" android:imeOptions="actionGo"
         android:importantForAutofill="no" android:inputType="textNoSuggestions" android:maxLines="1"
